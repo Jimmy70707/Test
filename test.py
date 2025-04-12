@@ -26,16 +26,19 @@ class EmbeddingsWrapper:
         self.model = model
 
     def embed_documents(self, docs):
-        # Generate embeddings for the provided documents
+        # Generate embeddings for the given documents using SentenceTransformer's encode
         return self.model.encode(docs, show_progress_bar=True).tolist()
 
     def __call__(self, docs):
-        # This allows the instance to be used as a callable function.
+        # This makes the instance callable like a function
         return self.embed_documents(docs)
 
-# Initialize the SentenceTransformer model and wrap it
+# Initialize the underlying SentenceTransformer model and wrap it
 sentence_transformer_model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = EmbeddingsWrapper(sentence_transformer_model)
+
+# For debugging: display the type of embeddings to ensure the new definition is in use
+st.write("Embeddings type:", type(embeddings))
 
 # Set up the Streamlit app interface
 st.title("Conversational RAG With PDF Uploads and Chat History")
@@ -53,10 +56,10 @@ session_id = st.text_input("Session ID", value="default_session")
 if 'store' not in st.session_state:
     st.session_state.store = {}
 
-# Define file source(s)
+# Define PDF file source(s)
 predefined_pdfs = ["Health Montoring Box (CHATBOT).pdf"]
 
-# Define a cached function to load and process PDFs
+# Cache PDF loading/processing
 @st.cache_data
 def load_and_process_pdfs(pdf_paths):
     documents = []
@@ -73,7 +76,7 @@ if predefined_pdfs:
     documents = load_and_process_pdfs(predefined_pdfs)
     st.success(f"Successfully processed {len(documents)} pages from {len(predefined_pdfs)} PDF(s).")
 
-    # Define a cached function to generate embeddings and create a FAISS vectorstore
+    # Cache embeddings generation and vectorstore creation
     @st.cache_resource
     def generate_embeddings(_documents):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
@@ -88,7 +91,7 @@ if predefined_pdfs:
         st.error(f"Error generating embeddings: {e}")
         st.stop()
 
-    # Create prompts for reformulating the user's question and for QA
+    # Create prompts for contextualizing question and for QA
     contextualize_q_system_prompt = (
         "Given a chat history and the latest user question "
         "which might reference context in the chat history, "
@@ -128,13 +131,11 @@ if predefined_pdfs:
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
-    # Function to extract the answer after </think> if needed
     def extract_final_answer(response: str) -> str:
         if "</think>" in response:
             return response.split("</think>")[-1].strip()
         return response.strip()
 
-    # Function to manage session history per session id
     def get_session_history(session: str) -> BaseChatMessageHistory:
         if session not in st.session_state.store:
             st.session_state.store[session] = ChatMessageHistory()
@@ -147,13 +148,13 @@ if predefined_pdfs:
         output_messages_key="answer"
     )
 
-    # Handling user input via text box and submit button
+    # Handle user input with text box and submit button
     user_input = st.text_input("Your question:", key="user_input",
                                on_change=lambda: st.session_state.update({"submitted": True}))
     submit_pressed = st.button("Submit", key="submit_button")
 
     if submit_pressed or st.session_state.get("submitted"):
-        st.session_state["submitted"] = False  # Reset flag after submission
+        st.session_state["submitted"] = False
         if user_input:
             with st.spinner("Generating response..."):
                 try:
@@ -173,8 +174,7 @@ if predefined_pdfs:
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
 
-    # Button to clear session history
     if st.button("Clear Chat History"):
         st.session_state.store[session_id] = ChatMessageHistory()
-        st.session_state.store[session_id].messages = []  # Explicitly clear messages
+        st.session_state.store[session_id].messages = []
         st.success("Chat history cleared!")
