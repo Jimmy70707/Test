@@ -11,16 +11,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 import os
 from dotenv import load_dotenv
-from langchain_community.embeddings import HuggingFaceEmbeddings
 load_dotenv()
-# Initialize embeddings with the pre-loaded model
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2" , device="cpu")
+# Initialize HuggingFace embeddings
 
 
-# Set up Streamlit
-st.title("Conversational RAG With PDF Uploads and Chat History")
-st.write("Upload PDFs and chat with their content")
-
+from langchain_huggingface import HuggingFaceInferenceAPIEmbeddings
 # API Key Loading
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 HUGGINGFACEHUB_API_TOKEN = st.secrets.get("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -28,6 +23,16 @@ HUGGINGFACEHUB_API_TOKEN = st.secrets.get("HUGGINGFACEHUB_API_TOKEN") or os.gete
 if not GROQ_API_KEY or not HUGGINGFACEHUB_API_TOKEN:
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
+
+# Initialize embeddings with Hugging Face API
+embeddings = HuggingFaceInferenceAPIEmbeddings(
+    api_key=HUGGINGFACEHUB_API_TOKEN,
+    model_name="all-MiniLM-L6-v2"
+)
+
+# Set up Streamlit
+st.title("Conversational RAG With PDF Uploads and Chat History")
+st.write("Upload PDFs and chat with their content")
 
 # Initialize LLM
 try:
