@@ -13,7 +13,7 @@ faiss-cpu
 sentence-transformers==2.2.2
 
 # Transformers stack (must match langchain-huggingface >= 0.1.0)
-transformers==4.39.3  # or latest stable >= 4.39.0
+transformers==4.40.1
 tokenizers==0.15.1    # usually still compatible, keep pinned for safety
 huggingface-hub==0.23.3  # Updated to resolve conflict [[1]][[3]]
 
