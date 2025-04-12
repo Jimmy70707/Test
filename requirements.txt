@@ -23,7 +23,7 @@ pypdf
 python-dotenv
 
 # Backend ML
-torch=
+torch
 torchvision
 
 # Required by sentence-transformers
