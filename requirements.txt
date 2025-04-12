@@ -2,15 +2,15 @@
 streamlit==1.33.0
 
 # LangChain core & integrations
-langchain==0.1.16
+langchain==0.3.0  # Updated to ensure compatibility with langchain-huggingface
 langchain-community==0.0.34
 langchain-text-splitters==0.0.1
 langchain-groq==0.1.0
 langchain-huggingface==0.1.0  # Ensure hyphenated name (no underscore)
 
 # Embeddings & vector store
-faiss-cpu
-sentence-transformers==2.6.0
+faiss-cpu==1.7.4
+sentence-transformers==2.2.2
 
 # Transformers stack (must match langchain-huggingface >= 0.1.0)
 transformers==4.40.1
@@ -29,4 +29,4 @@ torchvision==0.15.2  # Added for torch compatibility
 
 # Required by sentence-transformers
 scipy==1.13.0
-numpy==1.26.4
+numpy==1.24.0  # Ensure compatibility with ML libraries
