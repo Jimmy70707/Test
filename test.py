@@ -21,8 +21,16 @@ if not GROQ_API_KEY :
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
 
-# Initialize embeddings with Hugging Face API
-embeddings = SentenceTransformer('all-MiniLM-L6-v2')
+class EmbeddingsWrapper:
+    def __init__(self, model):
+        self.model = model
+
+    def embed_documents(self, docs):
+        # The encode method returns a list of embeddings.
+        return self.model.encode(docs, show_progress_bar=True).tolist()
+
+sentence_transformer_model = SentenceTransformer('all-MiniLM-L6-v2')
+embeddings = EmbeddingsWrapper(sentence_transformer_model)
 
 # Set up Streamlit
 st.title("Conversational RAG With PDF Uploads and Chat History")
