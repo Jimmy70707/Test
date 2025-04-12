@@ -37,8 +37,6 @@ class EmbeddingsWrapper:
 sentence_transformer_model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = EmbeddingsWrapper(sentence_transformer_model)
 
-# For debugging: display the type of embeddings to ensure the new definition is in use
-st.write("Embeddings type:", type(embeddings))
 
 # Set up the Streamlit app interface
 st.title("Conversational RAG With PDF Uploads and Chat History")
