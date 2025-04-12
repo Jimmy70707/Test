@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.vectorstores import FAISS
@@ -10,55 +12,51 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from sentence_transformers import SentenceTransformer
-import os
-from dotenv import load_dotenv
-load_dotenv()
-# Initialize HuggingFace embeddings
-from sentence_transformers import SentenceTransformer
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
-if not GROQ_API_KEY :
+# Load environment variables
+load_dotenv()
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
 
+# Define a wrapper that makes the SentenceTransformer model callable
 class EmbeddingsWrapper:
     def __init__(self, model):
         self.model = model
 
     def embed_documents(self, docs):
-        # Using the encode method from SentenceTransformer.
+        # Generate embeddings for the provided documents
         return self.model.encode(docs, show_progress_bar=True).tolist()
 
     def __call__(self, docs):
-        # This makes the object callable.
+        # This allows the instance to be used as a callable function.
         return self.embed_documents(docs)
 
+# Initialize the SentenceTransformer model and wrap it
 sentence_transformer_model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = EmbeddingsWrapper(sentence_transformer_model)
 
-# Set up Streamlit
+# Set up the Streamlit app interface
 st.title("Conversational RAG With PDF Uploads and Chat History")
 st.write("Upload PDFs and chat with their content")
 
-# Initialize LLM
+# Initialize the LLM
 try:
     llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="deepseek-r1-distill-llama-70b")
 except Exception as e:
     st.error(f"Failed to initialize LLM: {e}")
     st.stop()
 
-# Chat interface
+# Chat interface: session id and session history
 session_id = st.text_input("Session ID", value="default_session")
-
-# Statefully manage chat history
 if 'store' not in st.session_state:
     st.session_state.store = {}
 
-# File uploader
-#uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
-predefined_pdfs = ["Health Montoring Box (CHATBOT).pdf"]  # actual file paths
+# Define file source(s)
+predefined_pdfs = ["Health Montoring Box (CHATBOT).pdf"]
 
-# Process uploaded PDFs with caching
+# Define a cached function to load and process PDFs
 @st.cache_data
 def load_and_process_pdfs(pdf_paths):
     documents = []
@@ -71,12 +69,11 @@ def load_and_process_pdfs(pdf_paths):
             st.error(f"Error processing {pdf_path}: {e}")
     return documents
 
-
 if predefined_pdfs:
     documents = load_and_process_pdfs(predefined_pdfs)
     st.success(f"Successfully processed {len(documents)} pages from {len(predefined_pdfs)} PDF(s).")
 
-    # Split and create embeddings for the documents
+    # Define a cached function to generate embeddings and create a FAISS vectorstore
     @st.cache_resource
     def generate_embeddings(_documents):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
@@ -91,7 +88,7 @@ if predefined_pdfs:
         st.error(f"Error generating embeddings: {e}")
         st.stop()
 
-    # Contextualize question prompt
+    # Create prompts for reformulating the user's question and for QA
     contextualize_q_system_prompt = (
         "Given a chat history and the latest user question "
         "which might reference context in the chat history, "
@@ -109,20 +106,17 @@ if predefined_pdfs:
 
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
-    # Answer question prompt
     system_prompt = (
-    "You are a medical assistant for question-answering tasks. "
-    "Use the following pieces of retrieved context to answer "
-    "the question concisely. If the question is about medical readings "
-    "and the values are abnormal or dangerous, clearly advise the user "
-    "to consult a doctor immediately. "
-    "If you don't know the answer, say that you don't know. "
-    "Keep the answer to 1-2 sentences maximum."
-    "\n\n"
-    "{context}"
-)
-
-    
+        "You are a medical assistant for question-answering tasks. "
+        "Use the following pieces of retrieved context to answer "
+        "the question concisely. If the question is about medical readings "
+        "and the values are abnormal or dangerous, clearly advise the user "
+        "to consult a doctor immediately. "
+        "If you don't know the answer, say that you don't know. "
+        "Keep the answer to 1-2 sentences maximum."
+        "\n\n"
+        "{context}"
+    )
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -134,17 +128,17 @@ if predefined_pdfs:
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
+    # Function to extract the answer after </think> if needed
     def extract_final_answer(response: str) -> str:
-         """Extracts the answer after </think> or returns the original response."""
-         if "</think>" in response:
+        if "</think>" in response:
             return response.split("</think>")[-1].strip()
-         return response.strip()
+        return response.strip()
 
-    # Get session history function
+    # Function to manage session history per session id
     def get_session_history(session: str) -> BaseChatMessageHistory:
-        if session_id not in st.session_state.store:
-            st.session_state.store[session_id] = ChatMessageHistory()
-        return st.session_state.store[session_id]
+        if session not in st.session_state.store:
+            st.session_state.store[session] = ChatMessageHistory()
+        return st.session_state.store[session]
 
     conversational_rag_chain = RunnableWithMessageHistory(
         rag_chain, get_session_history,
@@ -153,45 +147,34 @@ if predefined_pdfs:
         output_messages_key="answer"
     )
 
-    # User input handling with a spinner
-user_input = st.text_input("Your question:", key="user_input", on_change=lambda: st.session_state.update({"submitted": True}))
+    # Handling user input via text box and submit button
+    user_input = st.text_input("Your question:", key="user_input",
+                               on_change=lambda: st.session_state.update({"submitted": True}))
+    submit_pressed = st.button("Submit", key="submit_button")
 
-# Submit button
-submit_pressed = st.button("Submit", key="submit_button")
+    if submit_pressed or st.session_state.get("submitted"):
+        st.session_state["submitted"] = False  # Reset flag after submission
+        if user_input:
+            with st.spinner("Generating response..."):
+                try:
+                    session_history = get_session_history(session_id)
+                    response = conversational_rag_chain.invoke(
+                        {"input": user_input},
+                        config={"configurable": {"session_id": session_id}},
+                    )
+                    full_answer = response['answer']
+                    if "</think>" in full_answer:
+                        final_answer = full_answer.split("</think>")[-1].strip()
+                    else:
+                        final_answer = full_answer.strip()
+                    st.markdown(f"**Answer:** {final_answer}")
+                    with st.expander("View Chat History"):
+                        st.write(session_history.messages)
+                except Exception as e:
+                    st.error(f"Error generating response: {e}")
 
-if submit_pressed or st.session_state.get("submitted"):
-    st.session_state["submitted"] = False  # Reset the flag after submission
-    if user_input:
-        with st.spinner("Generating response..."):
-            try:
-                session_history = get_session_history(session_id)
-                response = conversational_rag_chain.invoke(
-                    {"input": user_input},
-                    config={"configurable": {"session_id": session_id}},
-                )
-
-                # Extract only the part after </think>
-                full_answer = response['answer']
-                if "</think>" in full_answer:
-                    final_answer = full_answer.split("</think>")[-1].strip()
-                else:
-                    final_answer = full_answer.strip()
-
-                # Display clean, bold answer
-                st.markdown(f"**Answer:** {final_answer}")
-
-                # Optionally show chat history
-                with st.expander("View Chat History"):
-                    st.write(session_history.messages)
-            except Exception as e:
-                st.error(f"Error generating response: {e}")
-
-
-    # Clear chat history button
-if st.button("Clear Chat History"):
-    st.session_state.store[session_id] = ChatMessageHistory()
-    st.session_state.store[session_id].messages = []  # Explicitly clearing messages
-    st.success("Chat history cleared!")
-
-#else:
-    #st.warning("Please upload at least one PDF file to proceed.")
+    # Button to clear session history
+    if st.button("Clear Chat History"):
+        st.session_state.store[session_id] = ChatMessageHistory()
+        st.session_state.store[session_id].messages = []  # Explicitly clear messages
+        st.success("Chat history cleared!")
