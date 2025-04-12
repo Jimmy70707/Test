@@ -10,7 +10,7 @@ langchain-huggingface==0.1.0
 
 # Embeddings & vector store
 faiss-cpu==1.7.4
-sentence-transformers==2.2.2
+sentence-transformers==2.6.0
 
 # Transformers stack (must match langchain-huggingface >= 0.1.0)
 transformers==4.40.1
