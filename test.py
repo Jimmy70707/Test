@@ -9,18 +9,19 @@ from langchain_groq import ChatGroq
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
+from sentence_transformers import SentenceTransformer
 import os
 from dotenv import load_dotenv
 load_dotenv()
-# Initialize HuggingFace embeddings
-from sentence_transformers import SentenceTransformer
+
+# Initialize API key for Groq
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY :
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
 
-# Initialize embeddings with Hugging Face API
+# Initialize embeddings using Hugging Face pre-trained model
 embeddings = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Set up Streamlit
@@ -42,7 +43,6 @@ if 'store' not in st.session_state:
     st.session_state.store = {}
 
 # File uploader
-#uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
 predefined_pdfs = ["Health Montoring Box (CHATBOT).pdf"]  # actual file paths
 
 # Process uploaded PDFs with caching
@@ -109,7 +109,6 @@ if predefined_pdfs:
     "{context}"
 )
 
-    
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -141,44 +140,41 @@ if predefined_pdfs:
     )
 
     # User input handling with a spinner
-user_input = st.text_input("Your question:", key="user_input", on_change=lambda: st.session_state.update({"submitted": True}))
+    user_input = st.text_input("Your question:", key="user_input", on_change=lambda: st.session_state.update({"submitted": True}))
 
-# Submit button
-submit_pressed = st.button("Submit", key="submit_button")
+    # Submit button
+    submit_pressed = st.button("Submit", key="submit_button")
 
-if submit_pressed or st.session_state.get("submitted"):
-    st.session_state["submitted"] = False  # Reset the flag after submission
-    if user_input:
-        with st.spinner("Generating response..."):
-            try:
-                session_history = get_session_history(session_id)
-                response = conversational_rag_chain.invoke(
-                    {"input": user_input},
-                    config={"configurable": {"session_id": session_id}},
-                )
+    if submit_pressed or st.session_state.get("submitted"):
+        st.session_state["submitted"] = False  # Reset the flag after submission
+        if user_input:
+            with st.spinner("Generating response..."):
+                try:
+                    session_history = get_session_history(session_id)
+                    response = conversational_rag_chain.invoke(
+                        {"input": user_input},
+                        config={"configurable": {"session_id": session_id}},
+                    )
 
-                # Extract only the part after </think>
-                full_answer = response['answer']
-                if "</think>" in full_answer:
-                    final_answer = full_answer.split("</think>")[-1].strip()
-                else:
-                    final_answer = full_answer.strip()
+                    # Extract only the part after </think>
+                    full_answer = response['answer']
+                    if "</think>" in full_answer:
+                        final_answer = full_answer.split("</think>")[-1].strip()
+                    else:
+                        final_answer = full_answer.strip()
 
-                # Display clean, bold answer
-                st.markdown(f"**Answer:** {final_answer}")
+                    # Display clean, bold answer
+                    st.markdown(f"**Answer:** {final_answer}")
 
-                # Optionally show chat history
-                with st.expander("View Chat History"):
-                    st.write(session_history.messages)
-            except Exception as e:
-                st.error(f"Error generating response: {e}")
+                    # Optionally show chat history
+                    with st.expander("View Chat History"):
+                        st.write(session_history.messages)
+                except Exception as e:
+                    st.error(f"Error generating response: {e}")
 
 
     # Clear chat history button
-if st.button("Clear Chat History"):
-    st.session_state.store[session_id] = ChatMessageHistory()
-    st.session_state.store[session_id].messages = []  # Explicitly clearing messages
-    st.success("Chat history cleared!")
-
-#else:
-    #st.warning("Please upload at least one PDF file to proceed.")
+    if st.button("Clear Chat History"):
+        st.session_state.store[session_id] = ChatMessageHistory()
+        st.session_state.store[session_id].messages = []  # Explicitly clearing messages
+        st.success("Chat history cleared!")
