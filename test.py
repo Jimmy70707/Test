@@ -26,8 +26,12 @@ class EmbeddingsWrapper:
         self.model = model
 
     def embed_documents(self, docs):
-        # The encode method returns a list of embeddings.
+        # Using the encode method from SentenceTransformer.
         return self.model.encode(docs, show_progress_bar=True).tolist()
+
+    def __call__(self, docs):
+        # This makes the object callable.
+        return self.embed_documents(docs)
 
 sentence_transformer_model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = EmbeddingsWrapper(sentence_transformer_model)
