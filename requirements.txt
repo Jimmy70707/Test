@@ -9,7 +9,6 @@ langchain-huggingface
 
 # Embeddings & vector store
 faiss-cpu
-sentence-transformers
 
 # Transformers stack (must match langchain-huggingface >= 0.1.0)
 transformers
@@ -22,10 +21,6 @@ pypdf
 # Environment variables
 python-dotenv
 
-# Backend ML
-torch
-torchvision
-
-# Required by sentence-transformers
+# Required 
 scipy
 numpy
