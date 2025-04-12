@@ -13,9 +13,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 # Initialize HuggingFace embeddings
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 
-
-from langchain_huggingface.embeddings import HuggingFaceInferenceAPIEmbeddings 
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 HUGGINGFACEHUB_API_TOKEN = st.secrets.get("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
@@ -24,10 +23,11 @@ if not GROQ_API_KEY or not HUGGINGFACEHUB_API_TOKEN:
     st.stop()
 
 # Initialize embeddings with Hugging Face API
-embeddings = HuggingFaceInferenceAPIEmbeddings(
+embeddings = HuggingFaceEmbeddings(
     api_key=HUGGINGFACEHUB_API_TOKEN,
     model_name="all-MiniLM-L6-v2"
 )
+
 
 # Set up Streamlit
 st.title("Conversational RAG With PDF Uploads and Chat History")
