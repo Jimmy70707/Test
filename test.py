@@ -12,17 +12,18 @@ from langchain_community.document_loaders import PyPDFLoader
 from sentence_transformers import SentenceTransformer
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# Initialize API key for Groq
+# Initialize HuggingFace embeddings
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
-if not GROQ_API_KEY :
+if not GROQ_API_KEY:
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
 
-# Initialize embeddings using Hugging Face pre-trained model
-embeddings = SentenceTransformer('all-MiniLM-L6-v2')
+# Initialize embeddings with Hugging Face API
+embeddings = SentenceTransformer(model="all-MiniLM-L6-v2")
 
 # Set up Streamlit
 st.title("Conversational RAG With PDF Uploads and Chat History")
@@ -43,7 +44,8 @@ if 'store' not in st.session_state:
     st.session_state.store = {}
 
 # File uploader
-predefined_pdfs = ["Health Montoring Box (CHATBOT).pdf"]  # actual file paths
+# uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
+predefined_pdfs = ["Health Monitoring Box (CHATBOT).pdf"]  # actual file paths
 
 # Process uploaded PDFs with caching
 @st.cache_data
@@ -58,7 +60,6 @@ def load_and_process_pdfs(pdf_paths):
             st.error(f"Error processing {pdf_path}: {e}")
     return documents
 
-
 if predefined_pdfs:
     documents = load_and_process_pdfs(predefined_pdfs)
     st.success(f"Successfully processed {len(documents)} pages from {len(predefined_pdfs)} PDF(s).")
@@ -68,7 +69,13 @@ if predefined_pdfs:
     def generate_embeddings(_documents):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
         splits = text_splitter.split_documents(_documents)
-        vectorstore = FAISS.from_documents(splits, embeddings)
+        
+        # Create embeddings using SentenceTransformer's encode method
+        texts = [split['text'] for split in splits]  # Extract the text from the split documents
+        embeddings_list = embeddings.encode(texts, convert_to_tensor=True)  # Generate embeddings
+        
+        # Use FAISS to create a vector store
+        vectorstore = FAISS.from_documents(splits, embeddings_list)
         return vectorstore
 
     try:
@@ -98,17 +105,17 @@ if predefined_pdfs:
 
     # Answer question prompt
     system_prompt = (
-    "You are a medical assistant for question-answering tasks. "
-    "Use the following pieces of retrieved context to answer "
-    "the question concisely. If the question is about medical readings "
-    "and the values are abnormal or dangerous, clearly advise the user "
-    "to consult a doctor immediately. "
-    "If you don't know the answer, say that you don't know. "
-    "Keep the answer to 1-2 sentences maximum."
-    "\n\n"
-    "{context}"
-)
-
+        "You are a medical assistant for question-answering tasks. "
+        "Use the following pieces of retrieved context to answer "
+        "the question concisely. If the question is about medical readings "
+        "and the values are abnormal or dangerous, clearly advise the user "
+        "to consult a doctor immediately. "
+        "If you don't know the answer, say that you don't know. "
+        "Keep the answer to 1-2 sentences maximum."
+        "\n\n"
+        "{context}"
+    )
+    
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -171,7 +178,6 @@ if predefined_pdfs:
                         st.write(session_history.messages)
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
-
 
     # Clear chat history button
     if st.button("Clear Chat History"):
