@@ -1,0 +1,18 @@
+streamlit[all]
+transformers
+langchain
+langchain-community
+langchain-groq
+langchain-huggingface
+faiss-cpu
+pypdf
+python-dotenv
+numpy
+tqdm
+huggingface-hub
+langchain_huggingface
+pydantic
+sentence-transformers  # Optional for embedding flexibility
+rich  # Optional for better logging
+torch
+torchvision
