@@ -15,8 +15,7 @@ load_dotenv()
 # Initialize HuggingFace embeddings
 
 
-from langchain_huggingface import HuggingFaceInferenceAPIEmbeddings
-# API Key Loading
+from langchain_huggingface.embeddings import HuggingFaceInferenceAPIEmbeddings 
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 HUGGINGFACEHUB_API_TOKEN = st.secrets.get("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
