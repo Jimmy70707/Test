@@ -24,14 +24,20 @@ HUGGINGFACEHUB_API_TOKEN = st.secrets.get("HUGGINGFACEHUB_API_TOKEN") or os.gete
 if not GROQ_API_KEY or not HUGGINGFACEHUB_API_TOKEN:
     st.error("Missing API keys! Please add them in .env or Streamlit Secrets.")
     st.stop()
-import torch
-# Initialize HuggingFace embeddings
-from langchain.embeddings import HuggingFaceEmbeddings
 
 # Add model_kwargs to control device and quiet download
+import torch
+from sentence_transformers import SentenceTransformer
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 # Set device to GPU if available, otherwise CPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", device=device)
+
+# Load the model directly onto the specified device
+model = SentenceTransformer("all-MiniLM-L6-v2", device=device)
+
+# Initialize embeddings with the pre-loaded model
+embeddings = HuggingFaceEmbeddings(model_name=model)
 
 
 # Initialize LLM
