@@ -1,32 +1,31 @@
 # Core framework
-streamlit==1.33.0
-
+streamlit
 # LangChain core & integrations
-langchain==0.3.0
-langchain-community==0.3.0
-langchain-text-splitters==0.3.0
-langchain-groq==0.2.0
-langchain-huggingface==0.1.0
+langchain
+langchain-community
+langchain-text-splitters
+langchain-groq
+langchain-huggingface
 
 # Embeddings & vector store
-faiss-cpu==1.7.4
-sentence-transformers==2.6.0
+faiss-cpu
+sentence-transformers
 
 # Transformers stack (must match langchain-huggingface >= 0.1.0)
-transformers==4.40.1
-tokenizers>=0.19.1
-huggingface-hub==0.23.3
+transformers
+tokenizers
+huggingface-hub
 
 # PDF parsing
-pypdf==3.17.4
+pypdf
 
 # Environment variables
-python-dotenv==1.0.1
+python-dotenv
 
 # Backend ML
-torch==2.2.1
-torchvision==0.15.2
+torch=
+torchvision
 
 # Required by sentence-transformers
-scipy==1.13.0
-numpy==1.24.0
+scipy
+numpy
