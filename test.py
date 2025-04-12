@@ -21,7 +21,7 @@ if not GROQ_API_KEY :
     st.stop()
 
 # Initialize embeddings with Hugging Face API
-embeddings = SentenceTransformer(model_name="all-MiniLM-L6-v2")
+embeddings = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Set up Streamlit
 st.title("Conversational RAG With PDF Uploads and Chat History")
