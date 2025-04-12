@@ -26,8 +26,7 @@ if not GROQ_API_KEY or not HUGGINGFACEHUB_API_TOKEN:
     st.stop()
 
 # Load model and embeddings
-model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
-embeddings = HuggingFaceEmbeddings(model=model)
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 # Initialize LLM
 try:
