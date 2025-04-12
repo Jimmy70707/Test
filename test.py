@@ -22,10 +22,14 @@ load_dotenv()
 # model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
 # Initialize HuggingFaceEmbeddings directly with the model name
-embeddings = HuggingFaceEmbeddings(
-    model_name="all-MiniLM-L6-v2",
-    model_kwargs={"device": "cpu"}  # Specify device here
-)
+from sentence_transformers import SentenceTransformer
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# Load the model directly onto CPU (bypass meta tensors)
+model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+
+# Initialize embeddings with the pre-loaded model
+embeddings = HuggingFaceEmbeddings(model=model)
 # Set up Streamlit
 st.title("Conversational RAG With PDF Uploads and Chat History")
 st.write("Upload PDFs and chat with their content")

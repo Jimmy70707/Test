@@ -1,18 +1,37 @@
-streamlit[all]
-transformers
-langchain
-langchain-community
-langchain-groq
-langchain-huggingface
-faiss-cpu
-pypdf
-python-dotenv
-numpy
-tqdm
-huggingface-hub
-langchain_huggingface
-pydantic
-sentence-transformers  # Optional for embedding flexibility
-rich  # Optional for better logging
-torch
-torchvision
+# Core framework
+streamlit==1.33.0
+
+# LangChain core & integrations
+langchain==0.1.16
+langchain-community==0.0.34
+langchain-text-splitters==0.0.1
+langchain-groq==0.1.0
+langchain-huggingface==0.1.0
+
+# Embeddings & vector store
+faiss-cpu==1.7.4
+sentence-transformers==2.2.2  # Downgraded for stability [[1]]
+
+# Transformers stack (fully compatible)
+transformers==4.30.2
+tokenizers==0.13.3   # Explicitly pinned [[4]]
+huggingface-hub==0.15.1
+
+# PDF parsing
+pypdf==3.17.4
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Backend ML
+torch==2.2.1         # Downgraded for Python 3.11 compatibility [[6]]
+torchvision==0.15.2  # Added to avoid dependency conflicts
+torchaudio==2.2.1    # Optional: For audio support
+
+# Required by sentence-transformers
+scipy==1.13.0
+numpy==1.26.4
+
+# Optional
+rich==13.7.0
+pydantic==1.10.12  # Explicitly pinned for LangChain compatibility [[7]]
